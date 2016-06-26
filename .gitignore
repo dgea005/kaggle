@@ -1,0 +1,27 @@
+secrets.py
+
+#storage / data stuff
+
+*.csv
+*.hdf5
+*.feather
+storage/
+data/
+discards/
+
+*.zip
+*.gz
+*.7z
+.DS_Store
+.DS_Store?
+._*
+
+
+
+# python stuff
+.ipynb_checkpoints
+__pycache__/
+*.py[cod]
+*$py.class
+
+
