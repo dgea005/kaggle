@@ -1,0 +1,38 @@
+---
+title: "West Nile Virus"
+author: "dgea"
+date: "Saturday, May 30, 2015"
+output: html_document
+---
+
+## Further information about the virus
+
+#### Initial questions of interest
+Would like to know what months we have in the training set and test set
+Are there are any months that are particularly active
+What months do we have in the weather data
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+source("data.R")
+```
+
+What years do we have in training set?
+```{r}
+table(train$Year)
+table(test$Year)
+```
+
+What months in training set for each year:
+
+```{r}
+table(train$Year, train$Month)
+```
+
+```{r}
+table(test$Year, test$Month)
+```
+
+```{r}
+table(wnv=train$WnvPresent, Month=train$Month, Year=train$Year)
+```
+
