@@ -18,21 +18,35 @@ labels = train["WnvPresent"]
 
 source("weatherfix.R")
 
-train$Date = levels(train$Date)[as.numeric(train$Date)]
-train$Date = as.Date(train$Date)
-train$Year = year(train$Date)
-train$Month = month(train$Date)
-train$Day = day(train$Date)
-train$Yday = yday(train$Date)
-train$Week = week(train$Date)
+add_date_information <- function(data){
+  data$Date = levels(data$Date)[as.numeric(data$Date)]
+  data$Date = as.Date(data$Date)
+  data$Year = year(data$Date)
+  data$Month = month(data$Date)
+  data$Day = day(data$Date)
+  data$Yday = yday(data$Date)
+  data$Week = week(data$Date)
+  return(data)  
+}
 
-test$Date = levels(test$Date)[as.numeric(test$Date)]
-test$Date = as.Date(test$Date)
-test$Year = year(test$Date)
-test$Month = month(test$Date)
-test$Day = day(test$Date)
-test$Yday = yday(test$Date)
-test$Week = week(test$Date)
+train = add_date_information(train)
+test = add_date_information(test)
+
+#train$Date = levels(train$Date)[as.numeric(train$Date)]
+#train$Date = as.Date(train$Date)
+#train$Year = year(train$Date)
+#train$Month = month(train$Date)
+#train$Day = day(train$Date)
+#train$Yday = yday(train$Date)
+#train$Week = week(train$Date)
+
+#test$Date = levels(test$Date)[as.numeric(test$Date)]
+#test$Date = as.Date(test$Date)
+#test$Year = year(test$Date)
+#test$Month = month(test$Date)
+#test$Day = day(test$Date)
+#test$Yday = yday(test$Date)
+#test$Week = week(test$Date)
 
 
 ## prep the species column by moving the test-only UNSPECIFIED CULEX to CULEX ERRATICUS, and re-doing the levels
