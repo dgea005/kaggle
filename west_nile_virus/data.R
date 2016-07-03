@@ -359,14 +359,6 @@ for (i in 1:length(unique(train$Date))){
 # so will say there are over 50 mosquitos if:
 # Multiple entries of SAME: Trap, Date and Species
 
-
-
-
-
-
-
-
-
 # this would be easier if there was an observation ID
 # will have to create one
 

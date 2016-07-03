@@ -129,146 +129,67 @@ test = create_variable_from_weather(test, station1, 'Tmin', 'Tmin1_wk', 7, min)
 test = create_variable_from_weather(test, station1, 'Tmax', 'Tmax1_wk', 7, max)
 
 
-## rain during week: rolling window
+## rain during past x days: rolling window
+train = create_variable_from_weather(train, station1, 'PrecipTotal', 'rain_wk', 11, sum)
+train = create_variable_from_weather(train, station1, 'PrecipTotal', 'rain_wk15', 30, sum)
 
+test = create_variable_from_weather(test, station1, 'PrecipTotal', 'rain_wk', 11, sum)
+test = create_variable_from_weather(test, station1, 'PrecipTotal', 'rain_wk15', 30, sum)
 
+## DewPoint and Wetbulb: rolling window past x days
+train = create_variable_from_weather(train, station1, 'DewPoint', 'dew_wk', 15, mean) 
+test = create_variable_from_weather(test, station1, 'DewPoint', 'dew_wk', 15, mean)
 
+train = create_variable_from_weather(train, station1, 'DewPoint', 'dew_sd', 15, sd) 
+test = create_variable_from_weather(test, station1, 'DewPoint', 'dew_sd', 15, sd)
 
-# changed 7 to 10
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(11)), ]
-  train[train$Date == obs_date, "rain_wk"] = as.numeric(sum(data_subset$PrecipTotal))
-}
+train = create_variable_from_weather(train, station1, 'WetBulb', 'wb_wk', 4, mean) 
+test = create_variable_from_weather(test, station1, 'WetBulb', 'wb_wk', 4, mean)
 
+train = create_variable_from_weather(train, station1, 'WetBulb', 'wb_sd', 10, sd) 
+test = create_variable_from_weather(test, station1, 'WetBulb', 'wb_sd', 10, sd)
 
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(30)), ]
-  train[train$Date == obs_date, "rain_wk15"] = as.numeric(sum(data_subset$PrecipTotal))
-}
+## windspeed
+train = create_variable_from_weather(train, station1, 'AvgSpeed', 'speed_wk', 10, mean) 
+test = create_variable_from_weather(test, station1, 'AvgSpeed', 'speed_wk', 10, mean)
 
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(12)), ]
-  test[test$Date == obs_date, "rain_wk"] = as.numeric(sum(data_subset$PrecipTotal))
-}
+train = create_variable_from_weather(train, station1, 'AvgSpeed', 'speed_sd', 7, sd) 
+test = create_variable_from_weather(test, station1, 'AvgSpeed', 'speed_sd', 7, sd)
 
-
-
-# need to explore DewPoint and WetBulb
-# found 15 days was the best for this
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(15)), ]
-  train[train$Date == obs_date, "dew_wk"] = mean(data_subset$DewPoint)
-}
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(15)), ]
-  test[test$Date == obs_date, "dew_wk"] = mean(data_subset$DewPoint)
-}
-
-
-# dew sd
-
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(15)), ]
-  train[train$Date == obs_date, "dew_sd"] = sd(data_subset$DewPoint)
-}
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(15)), ]
-  test[test$Date == obs_date, "dew_sd"] = sd(data_subset$DewPoint)
-}
-
-
-# wetbulb
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(4)), ]
-  train[train$Date == obs_date, "wb_wk"] = mean(data_subset$WetBulb)
-}
-
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(4)), ]
-  test[test$Date == obs_date, "wb_wk"] = mean(data_subset$WetBulb)
-}
-
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(10)), ]
-  train[train$Date == obs_date, "wb_sd"] = sd(data_subset$WetBulb)
-}
-
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(10)), ]
-  test[test$Date == obs_date, "wb_sd"] = sd(data_subset$WetBulb)
-}
-
-
-
-
-
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(10)), ]
-  train[train$Date == obs_date, "speed_wk"] = mean(data_subset$AvgSpeed)
-}
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(10)), ]
-  test[test$Date == obs_date, "speed_wk"] = mean(data_subset$AvgSpeed)
-}
-
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(7)), ]
-  train[train$Date == obs_date, "speed_sd"] = sd(data_subset$AvgSpeed)
-}
-
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(7)), ]
-  test[test$Date == obs_date, "speed_sd"] = sd(data_subset$AvgSpeed)
-}
-# 10 best so far for speed_sd
-
+train = create_variable_from_weather(train, station1, 'ResultDir', 'dir', 28, mean) 
+test = create_variable_from_weather(test, station1, 'ResultDir', 'dir', 28, mean) 
 
 # minutes of sunlight
-# want to try moving average i.e., average from 21-28 days ago
+## originally was looking at a window of 28-20 days ago, etc
+train = create_variable_from_weather(train, station1, 'Sun_min', 'sunlight', 28, mean) 
+test = create_variable_from_weather(test, station1, 'Sun_min', 'sunlight', 28, mean)
+
+## some daily values
+## Tmin, Tmax, Tavg - on day of measurement
+
+##
+## duplicate trap recording stuff
+## max of 50 records per row - so traps with more are kind of duplicated
+## want to find these
+## also remove duplicate rows here...
+##
 
 
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date - days(25) & (station1$Date >= obs_date - days(28)), ]
-  train[train$Date == obs_date, "sunlight"] = mean(data_subset$Sun_min)
-}
+# here are over 50 mosquitos if:
+# Multiple entries of SAME: Trap, Date and Species
 
 
-for (i in 1:length(unique(test$Date))){
-  obs_date = unique(test$Date)[i]
-  data_subset = station1[station1$Date <= obs_date - days(0) & (station1$Date >= obs_date - days(7)), ]
-  test[test$Date == obs_date, "sunlight"] = mean(data_subset$Sun_min)
-}
+duplicate_occurances_train = select(train, Trap, Date, Species2) %>%
+                                group_by(Trap, Date, Species2) %>%
+                                mutate(MosDup2 = n())
+train = unique(inner_join(train, duplicate_occurances_train))
+train$MosDup = as.integer((train$MosDup2 == 1)==FALSE)
+
+duplicate_occurances_test = select(test, Trap, Date, Species2) %>%
+                              group_by(Trap, Date, Species2) %>%
+                              mutate(MosDup2 = n())
+test = unique(inner_join(test, duplicate_occurances_test))
+test$MosDup = as.integer((test$MosDup2 == 1)==FALSE)
 
 
-# direction?
-
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  data_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(7)), ]
-  train[train$Date == obs_date, "dir"] = sd(data_subset$ResultDir)
-}
-
-
-
-
+  
