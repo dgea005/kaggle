@@ -1,4 +1,5 @@
 # exploration of distributions
+# for transformation ideas...
 
 # Response
 hist(train$WnvPresent, breaks = 2)

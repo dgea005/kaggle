@@ -1,3 +1,9 @@
+##
+## model for predicting WNV
+## run data_processing.R first i.e., source('data_processing.R')
+##
+
+
 library(Metrics)
 library(MASS)
 library(gam)
@@ -8,13 +14,14 @@ set.seed(2001)
 my.train = subset(train, select = c(Yday, Month, Week, Latitude, Longitude, 
                                     WnvPresent, Species2, Tavg1_mAv, Tavg1_mS,
                                     Tavg1_prcpAv, Tmin1_wk,rain_wk, MosDup, 
-                                    MosDup2, Tmin, Tavg,PrecipTotal, NMprd))
+                                    MosDup2, Tmin, Tavg,PrecipTotal, n_mosquitos))
 # create model formula
 # transforming variables was rather successful here
 model = formula(WnvPresent ~ poly(Yday,2) + poly(Week, 2) + Month + lo(Latitude, Longitude) +
                   Species2 + Tavg1_mAv  + Tavg1_mS + poly(Tmin1_wk,2) + rain_wk + 
                   I(Tavg1_prcpAv^(1/4)) + MosDup + log(MosDup2)+ poly(Tmin, 5)  +
-                  log1p(PrecipTotal + 1) + I(Tavg^4) +  I(1/NMprd^(2/3)) )
+                  log1p(PrecipTotal + 1) + I(Tavg^4) +  I(1/n_mosquitos^(2/3)))
+
 
 
 submit = FALSE

@@ -167,6 +167,12 @@ test = create_variable_from_weather(test, station1, 'Sun_min', 'sunlight', 28, m
 ## some daily values
 ## Tmin, Tmax, Tavg - on day of measurement
 
+s1_temps = dplyr::select(station1, Date, Tmin, Tmax, Tavg, PrecipTotal)%>%
+              group_by(Date, Tmin, Tmax, Tavg, PrecipTotal)
+train = unique(inner_join(train, s1_temps, by='Date'))
+test = unique(inner_join(test, s1_temps, by='Date'))
+
+
 ##
 ## duplicate trap recording stuff
 ## max of 50 records per row - so traps with more are kind of duplicated
@@ -178,18 +184,16 @@ test = create_variable_from_weather(test, station1, 'Sun_min', 'sunlight', 28, m
 # here are over 50 mosquitos if:
 # Multiple entries of SAME: Trap, Date and Species
 
+duplicate_traps <- function(data){
+  dup_occurances = dplyr::select(data, Trap, Date, Species2) %>%
+                      group_by(Trap, Date, Species2) %>%
+                      mutate(MosDup2 = n())
+  data = unique(inner_join(data, dup_occurances))
+  data$MosDup = as.integer((data$MosDup2 == 1)==FALSE)
+  return(data)
+}
 
-duplicate_occurances_train = select(train, Trap, Date, Species2) %>%
-                                group_by(Trap, Date, Species2) %>%
-                                mutate(MosDup2 = n())
-train = unique(inner_join(train, duplicate_occurances_train))
-train$MosDup = as.integer((train$MosDup2 == 1)==FALSE)
+train = duplicate_traps(train)
+test = duplicate_traps(test)
 
-duplicate_occurances_test = select(test, Trap, Date, Species2) %>%
-                              group_by(Trap, Date, Species2) %>%
-                              mutate(MosDup2 = n())
-test = unique(inner_join(test, duplicate_occurances_test))
-test$MosDup = as.integer((test$MosDup2 == 1)==FALSE)
-
-
-  
+source('predict_num_mosquitos.R')
