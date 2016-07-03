@@ -1,6 +1,8 @@
 # need to arange data to be usable
 library(plyr)
+library(dplyr)
 library(lubridate)
+
 
 
 # read in data
@@ -73,11 +75,33 @@ add_species_dummies <- function(data){
 train = add_species_dummies(train)
 test = add_species_dummies(test)
 
-for (i in 1:length(unique(train$Date))){
-  obs_date = unique(train$Date)[i]
-  month_subset = station1[station1$Date <= obs_date & (station1$Date >= obs_date - days(27)), ]
-  train[train$Date == obs_date, "Tavg1_mAv"] = mean(month_subset$Tavg)
+
+
+# average of 1 month temperature for each obs
+# the 1 refers to this being of station1 data
+# this was 28 in best model
+
+
+## window function to create weather from previous x days of weather data
+create_variable_from_weather <- function(data, wthr_dt, weather_var, new_col_name, days_, func){
+  unique_dates = unique(data$Date)
+  for (i in 1:length(unique_dates)){
+    obs_date = unique_dates[i]
+    data_subset = wthr_dt[wthr_dt$Date <= obs_date & (wthr_dt$Date >= obs_date - days(days_)), weather_var]
+    data[data$Date == obs_date, new_col_name] = do.call(func, list(na.omit(data_subset)))
+  }
+  return(data)
 }
+
+# previous month statistics
+
+train = create_variable_from_weather(train, station1, 'Tavg', 'Tavg1_mAv', 28, mean)
+train = create_variable_from_weather(train, station1, 'Tavg', 'Tavg1_mS', 28, sd)  #std deviation
+train = create_variable_from_weather(train, station2, 'Tavg', 'Tavg2_mAv', 24, mean)
+
+test = create_variable_from_weather(test, station1, 'Tavg', 'Tavg1_mAv', 2, mean)
+test = create_variable_from_weather(test, station1, 'Tavg', 'Tavg1_mS', 28, sd)  #std deviation
+test = create_variable_from_weather(test, station2, 'Tavg', 'Tavg2_mAv', 24, mean)
 
 
 
