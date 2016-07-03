@@ -24,8 +24,8 @@ model = formula(WnvPresent ~ poly(Yday,2) + poly(Week, 2) + Month + lo(Latitude,
 
 
 
-submit = FALSE
-fname = "submitglm33.csv"
+submit = TRUE
+fname = "submission_file.csv"
 fam = binomial
 
 #formula 
