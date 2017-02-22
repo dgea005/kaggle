@@ -6,18 +6,15 @@ from sklearn.metrics import log_loss
 from sklearn.model_selection import GridSearchCV,StratifiedShuffleSplit
 from sklearn.feature_extraction import text
 
-def load_data(file):
-    """load json and set index / time"""
-    df = pd.read_json(file)
-    df = df.set_index('listing_id')
-    df['created'] = pd.to_datetime(df['created'])
-    return df
-
 print('loading train data...')
-train = load_data('data/train.json')
-print('loading test data...')
-test = load_data('data/test.json')
+train = pd.read_json('data/train.json')
+#train = train.set_index('listing_id')
+train['created'] = pd.to_datetime(train['created'])
 
+print('loading test data...')
+test = pd.read_json('data/test.json')
+#test = test.set_index('listing_id')
+test['created'] = pd.to_datetime(test['created'])
 
 def set_int_for_category(x):
     if x == 'low':
@@ -131,53 +128,55 @@ test['log_description_length'] = test['log_description_length'].fillna(0)
 train['features_unlist'] = train["features"].apply(lambda x: " ".join(["_".join(i.lower().split(" ")) for i in x]))
 test['features_unlist'] = test["features"].apply(lambda x: " ".join(["_".join(i.lower().split(" ")) for i in x]))
 
-tfidf = text.CountVectorizer(stop_words='english', max_features=100)
+tfidf = text.CountVectorizer(stop_words='english', max_features=400)
 
 train_ft_tfidf_transformed = tfidf.fit_transform(train["features_unlist"])
 test_ft_tfidf_transformed = tfidf.transform(test["features_unlist"])
 
 
-n_listings_per_manager = (train
-.reset_index()
-.groupby(['manager_id'], as_index=False)
-.agg({'listing_id': lambda x: len(x.unique())})
-.rename(columns={'listing_id': 'n_listings_of_manager'})
-)
-
+n_listings_per_manager = (pd.DataFrame(train.groupby(['manager_id']).size())
+                          .reset_index().rename(columns={0:'n_listings_of_manager'})
+                         )
 
 train = train.merge(n_listings_per_manager, on='manager_id')
+
+# should this be recalculated for test??
 test = test.merge(n_listings_per_manager, on='manager_id', how='left')
 test.n_listings_of_manager = test.n_listings_of_manager.fillna(0)
 
-print(train.reset_index().columns)
-common_managers = (train.reset_index()
-    .groupby('manager_id')
-    .agg({'listing_id': lambda x: len(x)})
-    .pipe(lambda df: df[df.listing_id > 50])
-)
+#print(train.reset_index().columns)
+#print(train.reset_index().head(1))
+# for both of these .size() should be used or just index instead of renaming
+common_managers = (pd.DataFrame(train.groupby('manager_id').size())
+                    .reset_index().rename(columns={0:'n_listings'})
+                    .pipe(lambda df: df[df.n_listings > 5])
+                    .manager_id
+                   )
 
-common_managers = common_managers.index.values
-print(len(common_managers))
+print(train.loc[train.manager_id.isin(common_managers)][['manager_id']].reset_index().iloc[0:2])
 
-common_managers_train_pivot = (train.loc[train.manager_id.isin(common_managers)][['manager_id']]
-.reset_index().assign(manager_val=1)
-.pipe(pd.pivot_table, columns='manager_id', index='listing_id', values='manager_val')
-.fillna(0).astype(int)
-)
+common_managers_train_pivot = (train.loc[train.manager_id.isin(common_managers)]
+                                [['manager_id', 'listing_id']]
+                                .assign(manager_val=1)
+                                .pipe(pd.pivot_table, columns='manager_id', index='listing_id', values='manager_val')
+                                .fillna(0).astype(int)
+                                )
 
-common_managers_test_pivot = (test.loc[test.manager_id.isin(common_managers)][['manager_id']]
-.reset_index().assign(manager_val=1)
-.pipe(pd.pivot_table, columns='manager_id', index='listing_id', values='manager_val')
-.fillna(0).astype(int)
-)
+common_managers_test_pivot = (test.loc[test.manager_id.isin(common_managers)]
+                                [['manager_id', 'listing_id']]
+                                .assign(manager_val=1)
+                                .pipe(pd.pivot_table, columns='manager_id', index='listing_id', values='manager_val')
+                                .fillna(0).astype(int)
+                                )
 
-train = train.merge(common_managers_train_pivot, left_index=True, right_index=True, how='left')
+train = train.merge(common_managers_train_pivot, left_on='listing_id', right_index=True, how='left')
 # fillna
 train.loc[:, common_managers] = train.loc[:, common_managers].fillna(0)
+
+
 test = test.merge(common_managers_test_pivot, left_index=True, right_index=True, how='left')
 # fillna
 test.loc[:, common_managers] = test.loc[:, common_managers].fillna(0)
-
 
 
 print('setting up features and test / train split')
@@ -190,7 +189,7 @@ features = ['bathrooms',
             'n_features',
             'no_building_id',
             'description_length',
-            'log_description_length',
+            #'log_description_length',
             'description_n_words',
             'day_of_week',
             'hour_of_day',
@@ -201,10 +200,14 @@ features = ['bathrooms',
             'low_interest_display_address',
             'n_listings_of_manager']
 
+features.extend(common_managers)
+print(f'number of features: {len(features)}')
 
 X = sparse.hstack([train[features], train_ft_tfidf_transformed]).tocsr()
 train['interest_level'] = train.interest_level.apply(lambda x: set_int_for_category(x))
 y = train['interest_level']
+
+
 
 sss = StratifiedShuffleSplit(n_splits = 2, test_size=0.35, random_state=0)
 sss.get_n_splits(X=X, y=y)
@@ -227,14 +230,12 @@ params = {
     'objective': 'multiclass',
     'metric': 'multi_logloss',
     'num_leaves': 100,
-    'bagging_freq': 5,
     'verbose': 0,
     'num_class': 3,
-    'max_bin': 5
-    #'min_data_in_leaf': 5
+    'min_data_in_leaf': 20
     # 'feature_fraction': 0.3,
     # 'feature_fraction_seed': 42,
-    # 'bagging_fraction': 0.8,
+    #'bagging_fraction': 0.9
     # 'bagging_seed': 42
 }
 
@@ -245,7 +246,8 @@ gbm = lgb.train(params,
                 num_boost_round=200,
                 valid_sets=lgb_eval,
                 learning_rates=lambda iter: 0.05 * (0.99 ** iter),
-                early_stopping_rounds=5)
+                #learning_rate=0.03,
+                early_stopping_rounds=50)
 
 print('Save model...')
 # save model to file
@@ -253,7 +255,6 @@ gbm.save_model('model.txt')
 
 y_pred = gbm.predict(X_validate, num_iteration=gbm.best_iteration)
 
-print(y_pred[0:5])
 
 eval_error = log_loss(y_validate, y_pred) 
 print(f'logloss of eval: {eval_error}')
@@ -262,14 +263,20 @@ print(f'logloss of eval: {eval_error}')
 # # feature importances
 # print('Feature importances:', list(gbm.feature_importance()))
 
+
+
+
 X_test = sparse.hstack([test[features], test_ft_tfidf_transformed]).tocsr()
 
 y_test_predictions = gbm.predict(X_test,  num_iteration=gbm.best_iteration)
 
 ## create submission
-test_predictions = pd.DataFrame({'listing_id': test.index.values})
+test_predictions = pd.DataFrame({'listing_id': test.listing_id})
 test_predictions['low'] = y_test_predictions[:,0]
 test_predictions['medium'] = y_test_predictions[:,1]
 test_predictions['high'] = y_test_predictions[:,2]
 test_predictions.to_csv('test_submission_msboost.csv', index=False)
 
+# notes
+# overfitting the lightgbm doesn't correlate to improved leaderboard score
+# even when taking a large eval sample
